@@ -83,11 +83,13 @@ export default function AdminPage() {
   const fetchProducts = async () => {
     try {
       const res = await fetch(`${API_URL}/products`);
+      if (!res.ok) throw new Error("Server Error");
       const data = await res.json();
       setProducts(data);
       setLoading(false);
     } catch (err) {
       setLoading(false);
+      setMessage("Gagal memuat produk dari server.");
     }
   };
 
@@ -95,10 +97,12 @@ export default function AdminPage() {
     setLoadingOrders(true);
     try {
       const res = await fetch(`${API_URL}/orders`);
+      if (!res.ok) throw new Error("Server Error");
       const data = await res.json();
       setOrders(data);
     } catch (err) {
       console.error("Gagal fetch orders:", err);
+      setMessage("Gagal memuat order.");
     }
     setLoadingOrders(false);
   };

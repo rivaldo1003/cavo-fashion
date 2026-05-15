@@ -20,6 +20,7 @@ export default function Home() {
   const [products, setProducts] = useState([]);
   const [essentialImages, setEssentialImages] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
   const [kategoriKoleksi, setKategoriKoleksi] = useState("faith");
   const [tokohAktif, setTokohAktif] = useState(null);
   const [essentialsFotoAktif, setEssentialsFotoAktif] = useState(null); // 👈 TAMBAHKAN
@@ -55,6 +56,7 @@ export default function Home() {
       })
       .catch((err) => {
         console.error("Error Products:", err);
+        setError("Gagal memuat produk. Pastikan koneksi internet Anda stabil.");
       })
       .finally(() => {
         setLoading(false);
@@ -84,6 +86,20 @@ export default function Home() {
         setEssentialsFotoAktif(fallback[0]);
       });
   }, []);
+
+  if (error) {
+    return (
+      <div className="min-h-screen flex flex-col items-center justify-center bg-white px-6 text-center">
+        <p className="text-gray-500 mb-6 text-sm">{error}</p>
+        <button
+          onClick={() => window.location.reload()}
+          className="px-8 py-2 bg-black text-white rounded-full text-xs tracking-widest font-medium"
+        >
+          COBA LAGI
+        </button>
+      </div>
+    );
+  }
 
   if (loading) {
     return (
