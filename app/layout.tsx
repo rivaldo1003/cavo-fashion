@@ -13,11 +13,11 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "CAVO",
+  title: "CAVO | Ordinary People. Extraordinary Calling.",
   description:
-    "Premium faith streetwear brand. Faith Archives graphic tee & Essentials basic tee. Cotton Australia 250 Coolbreeze. Limited to 21 pieces.",
+    "Premium faith streetwear brand. Faith Archives graphic tee & Essentials basic tee. Cotton Australia 250 Coolbreeze. Limited to 21 pieces. DROP 01 — THE CALLING.",
   keywords:
-    "CAVO, faith streetwear, christian clothing, oversized t-shirt, faith archives, essentials, basic tee",
+    "CAVO, faith streetwear, christian clothing, oversized t-shirt, faith archives, essentials, basic tee, drop 01, the calling",
   authors: [{ name: "CAVO" }],
   creator: "CAVO",
   publisher: "CAVO",
@@ -25,7 +25,7 @@ export const metadata: Metadata = {
     title: "CAVO — Ordinary People. Extraordinary Calling.",
     description:
       "DROP 01: THE CALLING. Faith Archives + Essentials. Limited to 21 pieces.",
-    url: "https://cavo.vercel.app",
+    url: "https://cavoofficial.id", // ← UPDATED
     siteName: "CAVO",
     images: [
       {
@@ -40,8 +40,8 @@ export const metadata: Metadata = {
   },
   twitter: {
     card: "summary_large_image",
-    title: "CAVO",
-    description: "Ordinary people. Extraordinary calling.",
+    title: "CAVO | Ordinary People. Extraordinary Calling.",
+    description: "DROP 01 — THE CALLING. Limited to 21 pieces.",
     images: ["/models/logo.png"],
   },
   icons: {
