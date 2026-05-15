@@ -32,33 +32,45 @@ export default function Home() {
   // Fetch products dari backend
   useEffect(() => {
     fetch(`${API_URL}/products`)
-      .then((res) => res.json())
+      .then((res) => {
+        if (!res.ok) throw new Error("Gagal mengambil produk");
+        return res.json();
+      })
       .then((data) => {
-        setProducts(data);
+        const productsArray = Array.isArray(data) ? data : [];
+        setProducts(productsArray);
 
-        const faithProducts = data.filter(
+        const faithProducts = productsArray.filter(
           (p) => p.category === "FAITH ARCHIVES",
         );
         if (faithProducts.length > 0) {
           setTokohAktif(faithProducts[0]);
         }
 
-        const total = data.reduce(
+        const total = productsArray.reduce(
           (sum, product) => sum + (product.total_stok || 0),
           0,
         );
         setTotalPcs(total);
-
+      })
+      .catch((err) => {
+        console.error("Error Products:", err);
+      })
+      .finally(() => {
         setLoading(false);
       });
 
     // Fetch essential images dari backend
     fetch(`${API_URL}/essential-images`)
-      .then((res) => res.json())
+      .then((res) => {
+        if (!res.ok) throw new Error("Endpoint not found");
+        return res.json();
+      })
       .then((data) => {
-        setEssentialImages(data);
-        if (data.length > 0) {
-          setEssentialsFotoAktif(data[0]); // 👈 Set default gambar pertama
+        const imagesArray = Array.isArray(data) ? data : [];
+        setEssentialImages(imagesArray);
+        if (imagesArray.length > 0) {
+          setEssentialsFotoAktif(imagesArray[0]); // 👈 Set default gambar pertama
         }
       })
       .catch(() => {

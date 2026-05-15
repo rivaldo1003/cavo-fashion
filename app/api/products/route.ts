@@ -39,10 +39,9 @@ export async function POST(request: Request) {
     } else if (type === "essentials") {
       if (data.essentials.stok[size] !== undefined) {
         data.essentials.stok[size] = stokBaru;
-        data.essentials.totalStok = (Object.values(data.essentials.stok) as number[]).reduce(
-          (a, b) => a + b,
-          0,
-        );
+        data.essentials.totalStok = (
+          Object.values(data.essentials.stok) as number[]
+        ).reduce((a, b) => a + b, 0);
         saveProducts(data);
         return NextResponse.json({ success: true, product: data.essentials });
       }
