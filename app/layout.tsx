@@ -13,7 +13,7 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "CAVO | Ordinary People. Extraordinary Calling.",
+  title: "CAVO",
   description:
     "Premium faith streetwear brand. Faith Archives graphic tee & Essentials basic tee. Cotton Australia 250 Coolbreeze. Limited to 21 pieces.",
   keywords:
