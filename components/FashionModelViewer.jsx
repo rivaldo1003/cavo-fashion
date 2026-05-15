@@ -77,10 +77,10 @@ export default function Home() {
       })
       .catch(() => {
         const fallback = [
-          { id: 1, gambar: "/models/essential-1.png" },
-          { id: 2, gambar: "/models/essential-2.png" },
-          { id: 3, gambar: "/models/essential-3.png" },
-          { id: 4, gambar: "/models/essential-4.png" },
+          { id: 1, image_url: "/models/essential-1.png" },
+          { id: 2, image_url: "/models/essential-2.png" },
+          { id: 3, image_url: "/models/essential-3.png" },
+          { id: 4, image_url: "/models/essential-4.png" },
         ];
         setEssentialImages(fallback);
         setEssentialsFotoAktif(fallback[0]);
@@ -115,17 +115,17 @@ export default function Home() {
     essentialImages.length > 0
       ? essentialImages
       : [
-          { id: 1, gambar: "/models/essential-1.png" },
-          { id: 2, gambar: "/models/essential-2.png" },
-          { id: 3, gambar: "/models/essential-3.png" },
-          { id: 4, gambar: "/models/essential-4.png" },
+          { id: 1, image_url: "/models/essential-1.png" },
+          { id: 2, image_url: "/models/essential-2.png" },
+          { id: 3, image_url: "/models/essential-3.png" },
+          { id: 4, image_url: "/models/essential-4.png" },
         ];
 
   // 👈 Gambar utama berdasarkan kategori
   const gambarUtama =
     kategoriKoleksi === "faith"
       ? tokohAktif?.image_url
-      : essentialsFotoAktif?.gambar;
+      : essentialsFotoAktif?.image_url;
 
   const produkTerpilih = kategoriKoleksi === "faith" ? tokohAktif : essentials;
   const stokUkuran = produkTerpilih
@@ -317,7 +317,7 @@ Ordinary people. Extraordinary calling.`;
                   }`}
                 >
                   <Image
-                    src={foto.gambar}
+                    src={foto.image_url}
                     alt="Essential"
                     fill
                     className="object-cover"
