@@ -1,46 +1,12 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import { useRouter } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
 import Image from "next/image";
 
-// TOKOH ALKITAB - FAITH ARCHIVES
-const daftarTokoh = [
-  { id: 1, nama: "DAVID", gelar: "GIANT SLATER", theme: "Faith Over Fear", gambar: "/models/david-giant-slater.png", produkId: 1 },
-  { id: 2, nama: "JOSHUA", gelar: "CONQUEROR", theme: "Be Strong And Courageous", gambar: "/models/joshua-conqueror.png", produkId: 2 },
-  { id: 3, nama: "MOSES", gelar: "DELIVERER", theme: "Chosen Despite Weakness", gambar: "/models/moses-deliverer.png", produkId: 3 },
-  { id: 4, nama: "SAMSON", gelar: "THE STRONGHOLD", theme: "Might For God", gambar: "/models/samson-the-stronghold.png", produkId: 4 },
-];
-
-// ESSENTIALS
-const daftarEssentialsFoto = [
-  { id: 8, nama: "ESSENTIAL BLACK", gambar: "/models/essential-4.png" },
-  { id: 5, nama: "ESSENTIAL BLACK", gambar: "/models/essential-1.png" },
-  { id: 6, nama: "ESSENTIAL BLACK", gambar: "/models/essential-2.png" },
-  { id: 7, nama: "ESSENTIAL BLACK", gambar: "/models/essential-3.png" },
-];
-
-// PRODUK FAITH ARCHIVES
-const faithArchivesProduk = [
-  { id: 1, nama: "DAVID", gelar: "GIANT SLATER", theme: "Faith Over Fear", harga: "IDR 169.000", stok: { S: 0, M: 2, L: 2, XL: 1 }, totalStok: 5, seri: "FAITH ARCHIVES" },
-  { id: 2, nama: "JOSHUA", gelar: "CONQUEROR", theme: "Be Strong And Courageous", harga: "IDR 169.000", stok: { S: 1, M: 1, L: 0, XL: 1 }, totalStok: 3, seri: "FAITH ARCHIVES" },
-  { id: 3, nama: "MOSES", gelar: "DELIVERER", theme: "Chosen Despite Weakness", harga: "IDR 169.000", stok: { S: 0, M: 2, L: 1, XL: 0 }, totalStok: 3, seri: "FAITH ARCHIVES" },
-  { id: 4, nama: "SAMSON", gelar: "THE STRONGHOLD", theme: "Might For God", harga: "IDR 169.000", stok: { S: 0, M: 2, L: 1, XL: 1 }, totalStok: 4, seri: "FAITH ARCHIVES" },
-];
-
-// PRODUK ESSENTIALS
-const essentialsProduk = {
-  id: 5,
-  nama: "ESSENTIALS",
-  warna: "Black",
-  harga: "IDR 139.000",
-  stok: { S: 1, M: 3, L: 0, XL: 2 },
-  totalStok: 6,
-  seri: "ESSENTIALS"
-};
-
-const TOTAL_PCS = 21;
 const WHATSAPP_NUMBER = "6282197629818";
+const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000/api";
 
 const sizeChart = {
   S: { lebar: 52, panjang: 70 },
@@ -50,19 +16,98 @@ const sizeChart = {
 };
 
 export default function Home() {
+  const router = useRouter();
+  const [products, setProducts] = useState([]);
+  const [essentialImages, setEssentialImages] = useState([]);
+  const [loading, setLoading] = useState(true);
   const [kategoriKoleksi, setKategoriKoleksi] = useState("faith");
-  const [tokohAktif, setTokohAktif] = useState(daftarTokoh[0]);
-  const [essentialsFotoAktif, setEssentialsFotoAktif] = useState(daftarEssentialsFoto[0]);
+  const [tokohAktif, setTokohAktif] = useState(null);
+  const [essentialsFotoAktif, setEssentialsFotoAktif] = useState(null); // 👈 TAMBAHKAN
   const [ukuranAktif, setUkuranAktif] = useState("M");
   const [showSizeChart, setShowSizeChart] = useState(false);
   const [showToast, setShowToast] = useState(false);
   const [toastMessage, setToastMessage] = useState("");
+  const [totalPcs, setTotalPcs] = useState(0);
 
-  const produkTerpilih = kategoriKoleksi === "faith" 
-    ? faithArchivesProduk.find(p => p.id === tokohAktif.produkId)
-    : essentialsProduk;
-  
-  const stokUkuran = produkTerpilih?.stok || { S: 0, M: 0, L: 0, XL: 0 };
+  // Fetch products dari backend
+  useEffect(() => {
+    fetch(`${API_URL}/products`)
+      .then((res) => res.json())
+      .then((data) => {
+        setProducts(data);
+
+        const faithProducts = data.filter(
+          (p) => p.category === "FAITH ARCHIVES",
+        );
+        if (faithProducts.length > 0) {
+          setTokohAktif(faithProducts[0]);
+        }
+
+        const total = data.reduce(
+          (sum, product) => sum + (product.total_stok || 0),
+          0,
+        );
+        setTotalPcs(total);
+
+        setLoading(false);
+      });
+
+    // Fetch essential images dari backend
+    fetch(`${API_URL}/essential-images`)
+      .then((res) => res.json())
+      .then((data) => {
+        setEssentialImages(data);
+        if (data.length > 0) {
+          setEssentialsFotoAktif(data[0]); // 👈 Set default gambar pertama
+        }
+      })
+      .catch(() => {
+        const fallback = [
+          { id: 1, gambar: "/models/essential-1.png" },
+          { id: 2, gambar: "/models/essential-2.png" },
+          { id: 3, gambar: "/models/essential-3.png" },
+          { id: 4, gambar: "/models/essential-4.png" },
+        ];
+        setEssentialImages(fallback);
+        setEssentialsFotoAktif(fallback[0]);
+      });
+  }, []);
+
+  if (loading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-white">
+        <div className="text-gray-400">Loading...</div>
+      </div>
+    );
+  }
+
+  const faithArchives = products.filter((p) => p.category === "FAITH ARCHIVES");
+  const essentials = products.find((p) => p.category === "ESSENTIALS");
+  const essentialsFoto =
+    essentialImages.length > 0
+      ? essentialImages
+      : [
+          { id: 1, gambar: "/models/essential-1.png" },
+          { id: 2, gambar: "/models/essential-2.png" },
+          { id: 3, gambar: "/models/essential-3.png" },
+          { id: 4, gambar: "/models/essential-4.png" },
+        ];
+
+  // 👈 Gambar utama berdasarkan kategori
+  const gambarUtama =
+    kategoriKoleksi === "faith"
+      ? tokohAktif?.image_url
+      : essentialsFotoAktif?.gambar;
+
+  const produkTerpilih = kategoriKoleksi === "faith" ? tokohAktif : essentials;
+  const stokUkuran = produkTerpilih
+    ? {
+        S: produkTerpilih.stock_s || 0,
+        M: produkTerpilih.stock_m || 0,
+        L: produkTerpilih.stock_l || 0,
+        XL: produkTerpilih.stock_xl || 0,
+      }
+    : { S: 0, M: 0, L: 0, XL: 0 };
   const ukuranTersedia = ["S", "M", "L", "XL"];
 
   const handleShopNow = () => {
@@ -75,11 +120,13 @@ export default function Home() {
 
     const pesan = `ORDER CAVO - DROP 01
 
-${kategoriKoleksi === "faith" 
-  ? `${produkTerpilih.nama} - ${tokohAktif.gelar}`
-  : `ESSENTIALS - BLACK`}
+${
+  kategoriKoleksi === "faith"
+    ? `${produkTerpilih.name} - ${produkTerpilih.gelar}`
+    : `ESSENTIALS - BLACK`
+}
 Ukuran: ${ukuranAktif}
-Harga: ${produkTerpilih.harga}
+Harga: IDR ${produkTerpilih.price.toLocaleString("id-ID")}
 
 Data Pemesan:
 Nama: 
@@ -89,13 +136,14 @@ No. WhatsApp:
 ---
 Ordinary people. Extraordinary calling.`;
 
-    window.open(`https://wa.me/${WHATSAPP_NUMBER}?text=${encodeURIComponent(pesan)}`, '_blank');
+    window.open(
+      `https://wa.me/${WHATSAPP_NUMBER}?text=${encodeURIComponent(pesan)}`,
+      "_blank",
+    );
     setToastMessage("Dialihkan ke WhatsApp");
     setShowToast(true);
     setTimeout(() => setShowToast(false), 3000);
   };
-
-  const gambarAktif = kategoriKoleksi === "faith" ? tokohAktif.gambar : essentialsFotoAktif.gambar;
 
   return (
     <div className="min-h-screen bg-white">
@@ -113,7 +161,6 @@ Ordinary people. Extraordinary calling.`;
       </AnimatePresence>
 
       <div className="max-w-md mx-auto px-5 py-8">
-        
         {/* HEADER */}
         <div className="text-center mb-8">
           <div className="relative w-32 h-16 mx-auto mb-3">
@@ -125,15 +172,19 @@ Ordinary people. Extraordinary calling.`;
               priority
             />
           </div>
-          <div className="text-[11px] tracking-[0.25em] text-gray-500 uppercase mb-1">DROP 01 — THE CALLING</div>
-          <div className="text-[10px] text-gray-400 italic">Ordinary people. Extraordinary calling.</div>
+          <div className="text-[11px] tracking-[0.25em] text-gray-500 uppercase mb-1">
+            DROP 01 — THE CALLING
+          </div>
+          <div className="text-[10px] text-gray-400 italic">
+            Minimal Form. Maximum Presence.{" "}
+          </div>
           <div className="w-12 h-px bg-gray-300 mx-auto mt-4" />
         </div>
 
         {/* BADGE LIMITED */}
         <div className="flex justify-center mb-6">
           <div className="border border-black text-black text-[10px] font-medium px-4 py-1 rounded-full">
-            LIMITED TO {TOTAL_PCS} PCS
+            LIMITED TO {totalPcs} PCS
           </div>
         </div>
 
@@ -142,11 +193,12 @@ Ordinary people. Extraordinary calling.`;
           <button
             onClick={() => {
               setKategoriKoleksi("faith");
+              if (faithArchives.length > 0) setTokohAktif(faithArchives[0]);
               setUkuranAktif("M");
             }}
             className={`text-sm font-medium py-1.5 px-5 rounded-full transition ${
-              kategoriKoleksi === "faith" 
-                ? "bg-black text-white" 
+              kategoriKoleksi === "faith"
+                ? "bg-black text-white"
                 : "bg-gray-100 text-gray-600 hover:bg-gray-200"
             }`}
           >
@@ -158,8 +210,8 @@ Ordinary people. Extraordinary calling.`;
               setUkuranAktif("M");
             }}
             className={`text-sm font-medium py-1.5 px-5 rounded-full transition ${
-              kategoriKoleksi === "essentials" 
-                ? "bg-black text-white" 
+              kategoriKoleksi === "essentials"
+                ? "bg-black text-white"
                 : "bg-gray-100 text-gray-600 hover:bg-gray-200"
             }`}
           >
@@ -171,82 +223,122 @@ Ordinary people. Extraordinary calling.`;
         <div className="relative w-full aspect-square bg-gray-100 rounded-xl overflow-hidden mb-3">
           <AnimatePresence mode="wait">
             <motion.div
-              key={kategoriKoleksi === "faith" ? tokohAktif.id : essentialsFotoAktif.id}
+              key={
+                kategoriKoleksi === "faith"
+                  ? tokohAktif?.id
+                  : essentialsFotoAktif?.id
+              }
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
               transition={{ duration: 0.3 }}
               className="absolute inset-0 w-full h-full"
             >
-              <Image src={gambarAktif} alt="CAVO" fill className="object-cover" priority />
+              <Image
+                src={gambarUtama || "/models/essential-1.png"}
+                alt={produkTerpilih?.name || "CAVO"}
+                fill
+                className="object-cover"
+                priority
+              />
             </motion.div>
           </AnimatePresence>
           <div className="absolute top-3 left-3 bg-black/70 text-white text-[10px] font-medium px-2 py-0.5 rounded-full">
-            {produkTerpilih.totalStok} left
+            {produkTerpilih?.total_stok} left
           </div>
         </div>
 
-        {/* THUMBNAIL */}
-        <div className="overflow-x-auto no-scrollbar mb-6">
-          <div className="flex gap-2 justify-center min-w-max">
-            {kategoriKoleksi === "faith" 
-              ? daftarTokoh.map((tokoh) => (
-                  <button
-                    key={tokoh.id}
-                    onClick={() => setTokohAktif(tokoh)}
-                    className={`relative w-12 h-12 rounded-lg overflow-hidden border-2 ${
-                      tokohAktif.id === tokoh.id 
-                        ? "border-black" 
-                        : "border-gray-200"
-                    }`}
-                  >
-                    <Image src={tokoh.gambar} alt={tokoh.nama} fill className="object-cover" />
-                  </button>
-                ))
-              : daftarEssentialsFoto.map((foto) => (
-                  <button
-                    key={foto.id}
-                    onClick={() => setEssentialsFotoAktif(foto)}
-                    className={`relative w-12 h-12 rounded-lg overflow-hidden border-2 ${
-                      essentialsFotoAktif.id === foto.id 
-                        ? "border-black" 
-                        : "border-gray-200"
-                    }`}
-                  >
-                    <Image src={foto.gambar} alt="Essential" fill className="object-cover" />
-                  </button>
-                ))
-            }
+        {/* THUMBNAIL - FAITH ARCHIVES */}
+        {kategoriKoleksi === "faith" && (
+          <div className="overflow-x-auto no-scrollbar mb-6">
+            <div className="flex gap-2 justify-center min-w-max">
+              {faithArchives.map((tokoh) => (
+                <button
+                  key={tokoh.id}
+                  onClick={() => setTokohAktif(tokoh)}
+                  className={`relative w-12 h-12 rounded-lg overflow-hidden border-2 ${
+                    tokohAktif?.id === tokoh.id
+                      ? "border-black"
+                      : "border-gray-200"
+                  }`}
+                >
+                  <Image
+                    src={tokoh.image_url}
+                    alt={tokoh.name}
+                    fill
+                    className="object-cover"
+                  />
+                </button>
+              ))}
+            </div>
           </div>
-        </div>
+        )}
+
+        {/* THUMBNAIL - ESSENTIALS - dengan onClick */}
+        {kategoriKoleksi === "essentials" && (
+          <div className="overflow-x-auto no-scrollbar mb-6">
+            <div className="flex gap-2 justify-center min-w-max">
+              {essentialsFoto.map((foto) => (
+                <button
+                  key={foto.id}
+                  onClick={() => setEssentialsFotoAktif(foto)} // 👈 TAMBAHKAN onClick
+                  className={`relative w-12 h-12 rounded-lg overflow-hidden border-2 ${
+                    essentialsFotoAktif?.id === foto.id
+                      ? "border-black"
+                      : "border-gray-200"
+                  }`}
+                >
+                  <Image
+                    src={foto.gambar}
+                    alt="Essential"
+                    fill
+                    className="object-cover"
+                  />
+                </button>
+              ))}
+            </div>
+          </div>
+        )}
 
         {/* INFO PRODUK */}
         <div className="text-center">
           <div className="text-[10px] font-medium text-gray-400 tracking-[0.2em] mb-1">
-            {produkTerpilih.seri}
+            {kategoriKoleksi === "faith" ? "FAITH ARCHIVES" : "ESSENTIALS"}
           </div>
-          
+
           {kategoriKoleksi === "faith" ? (
             <>
-              <div className="text-4xl font-bold tracking-tight text-black">{produkTerpilih.nama}</div>
-              <div className="text-[11px] text-gray-500 mt-1">{tokohAktif.theme}</div>
-              <div className="text-xs text-gray-400 uppercase mt-0.5">{tokohAktif.gelar}</div>
+              <div className="text-4xl font-bold tracking-tight text-black">
+                {produkTerpilih?.name}
+              </div>
+              <div className="text-[11px] text-gray-500 mt-1">
+                {produkTerpilih?.theme}
+              </div>
+              <div className="text-xs text-gray-400 uppercase mt-0.5">
+                {produkTerpilih?.gelar}
+              </div>
             </>
           ) : (
             <>
-              <div className="text-3xl font-bold tracking-tight text-black">ESSENTIALS</div>
-              <div className="text-xs text-gray-400 uppercase mt-1">Black Edition</div>
+              <div className="text-3xl font-bold tracking-tight text-black">
+                ESSENTIALS
+              </div>
+              <div className="text-xs text-gray-400 uppercase mt-1">
+                Black Edition
+              </div>
             </>
           )}
-          
+
           <div className="flex justify-center gap-1 my-3">
             <div className="w-6 h-px bg-gray-300" />
             <div className="w-8 h-px bg-gray-400" />
             <div className="w-6 h-px bg-gray-300" />
           </div>
-          
-          <div className="text-2xl font-bold text-black">{produkTerpilih.harga}</div>
-          
+
+          <div className="text-2xl font-bold text-black">
+            IDR {produkTerpilih?.price?.toLocaleString("id-ID")}
+          </div>
+
           <div className="text-[10px] text-gray-400 mt-3">
             Cotton Australia 250 Coolbreeze · 250 GSM · Oversized fit
           </div>
@@ -266,10 +358,10 @@ Ordinary people. Extraordinary calling.`;
                   key={ukuran}
                   onClick={() => isTersedia && setUkuranAktif(ukuran)}
                   className={`w-11 py-1.5 text-sm font-medium rounded-md border transition ${
-                    ukuranAktif === ukuran && isTersedia 
-                      ? "border-black bg-black text-white" 
-                      : isTersedia 
-                        ? "border-gray-300 text-black hover:border-black" 
+                    ukuranAktif === ukuran && isTersedia
+                      ? "border-black bg-black text-white"
+                      : isTersedia
+                        ? "border-gray-300 text-black hover:border-black"
                         : "border-gray-100 text-gray-300 cursor-not-allowed"
                   }`}
                 >
@@ -278,12 +370,16 @@ Ordinary people. Extraordinary calling.`;
               );
             })}
           </div>
-          
+
           <div className="flex justify-center gap-3 mt-2">
             {ukuranTersedia.map((ukuran) => {
               const stok = stokUkuran[ukuran];
               if (stok > 0) {
-                return <span key={ukuran} className="text-[9px] text-gray-400">{ukuran}: {stok}</span>;
+                return (
+                  <span key={ukuran} className="text-[9px] text-gray-400">
+                    {ukuran}: {stok}
+                  </span>
+                );
               }
               return null;
             })}
@@ -298,34 +394,53 @@ Ordinary people. Extraordinary calling.`;
 
           {showSizeChart && (
             <div className="mt-3 p-3 bg-gray-50 rounded-lg border border-gray-200">
-              <div className="text-[9px] font-medium text-center text-black mb-2">Size chart (cm)</div>
+              <div className="text-[9px] font-medium text-center text-black mb-2">
+                Size chart (cm)
+              </div>
               <div className="flex justify-center gap-5 text-[8px] text-gray-600">
-                <div><span className="block font-medium text-black">S</span>52/70</div>
-                <div><span className="block font-medium text-black">M</span>55/73</div>
-                <div><span className="block font-medium text-black">L</span>58/76</div>
-                <div><span className="block font-medium text-black">XL</span>61/79</div>
+                <div>
+                  <span className="block font-medium text-black">S</span>52/70
+                </div>
+                <div>
+                  <span className="block font-medium text-black">M</span>55/73
+                </div>
+                <div>
+                  <span className="block font-medium text-black">L</span>58/76
+                </div>
+                <div>
+                  <span className="block font-medium text-black">XL</span>61/79
+                </div>
               </div>
             </div>
           )}
         </div>
 
-        {/* TOMBOL ORDER */}
         <button
-          onClick={handleShopNow}
+          onClick={() => {
+            if (stokUkuran[ukuranAktif] > 0) {
+              router.push(
+                `/checkout?product=${encodeURIComponent(produkTerpilih.name)}&size=${ukuranAktif}&price=${produkTerpilih.price}&image=${produkTerpilih.image_url}&gelar=${encodeURIComponent(produkTerpilih.gelar || "")}`,
+              );
+            }
+          }}
           disabled={stokUkuran[ukuranAktif] === 0}
           className={`w-full mt-7 py-3 text-sm font-medium tracking-[0.2em] rounded-full transition ${
-            stokUkuran[ukuranAktif] > 0 
-              ? "bg-black text-white hover:bg-gray-800" 
+            stokUkuran[ukuranAktif] > 0
+              ? "bg-black text-white hover:bg-gray-800"
               : "bg-gray-100 text-gray-400 cursor-not-allowed"
           }`}
         >
-          {stokUkuran[ukuranAktif] === 0 ? "SOLD OUT" : "ORDER VIA WHATSAPP"}
+          {stokUkuran[ukuranAktif] === 0 ? "SOLD OUT" : "BELI SEKARANG"}
         </button>
 
         {/* FOOTER */}
         <div className="text-center mt-7 pt-4 border-t border-gray-100">
-          <div className="text-[9px] text-gray-400 tracking-[0.15em]">CAVO — FAITH ARCHIVES</div>
-          <div className="text-[8px] text-gray-300 mt-1">DROP 01 · THE CALLING</div>
+          <div className="text-[9px] text-gray-400 tracking-[0.15em]">
+            CAVO — FAITH ARCHIVES
+          </div>
+          <div className="text-[8px] text-gray-300 mt-1">
+            DROP 01 · THE CALLING
+          </div>
         </div>
       </div>
 

@@ -1,0 +1,140 @@
+{
+  "faithArchives": [
+    {
+      "id": 1,
+      "nama": "DAVID",
+      "gelar": "GIANT SLATER",
+      "theme": "Faith Over Fear",
+      "gambar": "/models/david-giant-slater.png",
+      "harga": "IDR 169.000",
+      "hargaAngka": 169000,
+      "stok": {
+        "S": 0,
+        "M": 2,
+        "L": 2,
+        "XL": 1
+      },
+      "totalStok": 5,
+      "seri": "FAITH ARCHIVES"
+    },
+    {
+      "id": 2,
+      "nama": "JOSHUA",
+      "gelar": "CONQUEROR",
+      "theme": "Be Strong And Courageous",
+      "gambar": "/models/joshua-conqueror.png",
+      "harga": "IDR 169.000",
+      "hargaAngka": 169000,
+      "stok": {
+        "S": 1,
+        "M": 1,
+        "L": 0,
+        "XL": 1
+      },
+      "totalStok": 3,
+      "seri": "FAITH ARCHIVES"
+    },
+    {
+      "id": 3,
+      "nama": "MOSES",
+      "gelar": "DELIVERER",
+      "theme": "Chosen Despite Weakness",
+      "gambar": "/models/moses-deliverer.png",
+      "harga": "IDR 169.000",
+      "hargaAngka": 169000,
+      "stok": {
+        "S": 0,
+        "M": 2,
+        "L": 1,
+        "XL": 0
+      },
+      "totalStok": 3,
+      "seri": "FAITH ARCHIVES"
+    },
+    {
+      "id": 4,
+      "nama": "SAMSON",
+      "gelar": "THE STRONGHOLD",
+      "theme": "Might For God",
+      "gambar": "/models/samson-the-stronghold.png",
+      "harga": "IDR 169.000",
+      "hargaAngka": 169000,
+      "stok": {
+        "S": 0,
+        "M": 2,
+        "L": 1,
+        "XL": 1
+      },
+      "totalStok": 4,
+      "seri": "FAITH ARCHIVES"
+    }
+  ],
+  "essentials": {
+    "id": 5,
+    "nama": "ESSENTIALS",
+    "warna": "Black",
+    "gambar": "/models/essential-1.png",
+    "harga": "IDR 139.000",
+    "hargaAngka": 139000,
+    "stok": {
+      "S": 1,
+      "M": 3,
+      "L": 0,
+      "XL": 1
+    },
+    "totalStok": 5,
+    "seri": "ESSENTIALS"
+  },
+  "essentialsFoto": [
+    {
+      "id": 8,
+      "gambar": "/models/essential-4.png"
+    },
+    {
+      "id": 5,
+      "gambar": "/models/essential-1.png"
+    },
+    {
+      "id": 6,
+      "gambar": "/models/essential-2.png"
+    },
+    {
+      "id": 7,
+      "gambar": "/models/essential-3.png"
+    }
+  ],
+  "daftarTokoh": [
+    {
+      "id": 1,
+      "nama": "DAVID",
+      "gelar": "GIANT SLATER",
+      "theme": "Faith Over Fear",
+      "gambar": "/models/david-giant-slater.png",
+      "produkId": 1
+    },
+    {
+      "id": 2,
+      "nama": "JOSHUA",
+      "gelar": "CONQUEROR",
+      "theme": "Be Strong And Courageous",
+      "gambar": "/models/joshua-conqueror.png",
+      "produkId": 2
+    },
+    {
+      "id": 3,
+      "nama": "MOSES",
+      "gelar": "DELIVERER",
+      "theme": "Chosen Despite Weakness",
+      "gambar": "/models/moses-deliverer.png",
+      "produkId": 3
+    },
+    {
+      "id": 4,
+      "nama": "SAMSON",
+      "gelar": "THE STRONGHOLD",
+      "theme": "Might For God",
+      "gambar": "/models/samson-the-stronghold.png",
+      "produkId": 4
+    }
+  ]
+}
