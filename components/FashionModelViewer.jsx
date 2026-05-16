@@ -8,11 +8,13 @@ import Image from "next/image";
 const WHATSAPP_NUMBER = "6282197629818";
 const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000/api";
 
+// Updated size chart with S, M, L, XL, XXL
 const sizeChart = {
-  S: { lebar: 52, panjang: 70 },
-  M: { lebar: 55, panjang: 73 },
-  L: { lebar: 58, panjang: 76 },
-  XL: { lebar: 61, panjang: 79 },
+  S: { lebar: 52, panjang: 70, bahu: 51, lengan: 23 },
+  M: { lebar: 55, panjang: 73, bahu: 54, lengan: 24 },
+  L: { lebar: 58, panjang: 76, bahu: 57, lengan: 25 },
+  XL: { lebar: 61, panjang: 79, bahu: 60, lengan: 26 },
+  XXL: { lebar: 63, panjang: 82, bahu: 62, lengan: 27 },
 };
 
 export default function Home() {
@@ -23,12 +25,13 @@ export default function Home() {
   const [error, setError] = useState(null);
   const [kategoriKoleksi, setKategoriKoleksi] = useState("faith");
   const [tokohAktif, setTokohAktif] = useState(null);
-  const [essentialsFotoAktif, setEssentialsFotoAktif] = useState(null); // 👈 TAMBAHKAN
+  const [essentialsFotoAktif, setEssentialsFotoAktif] = useState(null);
   const [ukuranAktif, setUkuranAktif] = useState("M");
   const [showSizeChart, setShowSizeChart] = useState(false);
   const [showToast, setShowToast] = useState(false);
   const [toastMessage, setToastMessage] = useState("");
   const [timeLeft, setTimeLeft] = useState({});
+  const [openFaq, setOpenFaq] = useState(null);
   const [totalPcs, setTotalPcs] = useState(0);
 
   // Fetch products dari backend
@@ -71,12 +74,10 @@ export default function Home() {
       })
       .then((data) => {
         const imagesArray = Array.isArray(data) ? data : [];
-        // Filter hanya gambar yang mengandung kata 'essential'
         const filteredImages = imagesArray.filter(
           (img) => img.gambar && img.gambar.includes("essential"),
         );
 
-        // Jika hasil filter dari API ada isinya, baru kita update state
         if (filteredImages.length > 0) {
           setEssentialImages(filteredImages);
           setEssentialsFotoAktif(filteredImages[0]);
@@ -94,7 +95,7 @@ export default function Home() {
       });
 
     // Countdown logic
-    const releaseDate = new Date("2026-05-19T00:00:00"); // May 19, 2026
+    const releaseDate = new Date("2026-05-19T00:00:00");
 
     const calculateTimeLeft = () => {
       const difference = +releaseDate - +new Date();
@@ -119,10 +120,29 @@ export default function Home() {
     return () => clearInterval(timer);
   }, []);
 
+  const faqs = [
+    {
+      q: "Kapan pesanan saya akan dikirim?",
+      a: "Karena saat ini masih periode Pre-Order, pesanan akan mulai diproses dan dikirim secara bertahap mulai tanggal rilis resmi, yaitu 19 Mei 2026.",
+    },
+    {
+      q: "Bagaimana cara konfirmasi pembayaran?",
+      a: "Setelah melakukan transfer, silakan hubungi WhatsApp kami dengan melampirkan bukti transfer dan nomor pesanan Anda.",
+    },
+    {
+      q: "Bahan apa yang digunakan?",
+      a: "Kami menggunakan Cotton Australia 250 Coolbreeze dengan berat 250 GSM. Bahan ini dirancang khusus untuk kenyamanan maksimal dengan potongan oversized.",
+    },
+    {
+      q: "Apakah bisa tukar ukuran?",
+      a: "Mohon pastikan ukuran Anda melalui 'Size guide' sebelum membeli. Penukaran ukuran hanya diperbolehkan jika stok masih tersedia dan produk dalam kondisi baru.",
+    },
+  ];
+
   const timerComponents = Object.keys(timeLeft).map((interval) => {
     if (!timeLeft[interval]) return null;
     return `${timeLeft[interval]} ${interval} `;
-  }, []);
+  });
 
   if (error) {
     return (
@@ -147,29 +167,6 @@ export default function Home() {
           transition={{ duration: 0.5 }}
           className="text-center"
         >
-          {/* Logo dengan animasi */}
-          {/* <motion.div
-            animate={{
-              scale: [1, 1.05, 1],
-              opacity: [0.7, 1, 0.7],
-            }}
-            transition={{
-              duration: 1.5,
-              repeat: Infinity,
-              ease: "easeInOut",
-            }}
-            className="relative w-24 h-24 mx-auto mb-4"
-          >
-            <Image
-              src="/models/logo.png"
-              alt="CAVO"
-              fill
-              className="object-contain"
-              priority
-            />
-          </motion.div> */}
-
-          {/* Teks brand dengan fade in/out */}
           <motion.h1
             initial={{ opacity: 0, y: 10 }}
             animate={{ opacity: 1, y: 0 }}
@@ -192,10 +189,9 @@ export default function Home() {
             transition={{ delay: 0.6 }}
             className="text-[9px] tracking-[0.2em] text-gray-300 uppercase"
           >
-            minimun form. Maximum presence.
+            minimum form. Maximum presence.
           </motion.p>
 
-          {/* Loading dots */}
           <motion.div
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
@@ -235,7 +231,6 @@ export default function Home() {
           { id: 4, gambar: "/models/essential-4.png" },
         ];
 
-  // 👈 Gambar utama berdasarkan kategori
   const gambarUtama =
     kategoriKoleksi === "faith"
       ? tokohAktif?.image_url
@@ -248,9 +243,10 @@ export default function Home() {
         M: produkTerpilih.stock_m || 0,
         L: produkTerpilih.stock_l || 0,
         XL: produkTerpilih.stock_xl || 0,
+        XXL: 0,
       }
-    : { S: 0, M: 0, L: 0, XL: 0 };
-  const ukuranTersedia = ["S", "M", "L", "XL"];
+    : { S: 0, M: 0, L: 0, XL: 0, XXL: 0 };
+  const ukuranTersedia = ["S", "M", "L", "XL", "XXL"];
 
   const handleShopNow = () => {
     if (stokUkuran[ukuranAktif] === 0) {
@@ -318,12 +314,12 @@ Ordinary people. Extraordinary calling.`;
             DROP 01 — THE CALLING
           </div>
           <div className="text-[10px] text-gray-400 italic">
-            Minimal Form. Maximum Presence.{" "}
+            Minimal Form. Maximum Presence.
           </div>
           <div className="w-12 h-px bg-gray-300 mx-auto mt-4" />
         </div>
 
-        {/* PRE-ORDER BANNER */}
+        {/* PRE-ORDER BANNER WITH COUNTDOWN */}
         <motion.div
           initial={{ opacity: 0, y: -20 }}
           animate={{ opacity: 1, y: 0 }}
@@ -442,14 +438,14 @@ Ordinary people. Extraordinary calling.`;
           </div>
         )}
 
-        {/* THUMBNAIL - ESSENTIALS - dengan onClick */}
+        {/* THUMBNAIL - ESSENTIALS */}
         {kategoriKoleksi === "essentials" && (
           <div className="overflow-x-auto no-scrollbar mb-6">
             <div className="flex gap-2 justify-center min-w-max">
               {essentialsFoto.map((foto) => (
                 <button
                   key={foto.id}
-                  onClick={() => setEssentialsFotoAktif(foto)} // 👈 TAMBAHKAN onClick
+                  onClick={() => setEssentialsFotoAktif(foto)}
                   className={`relative w-12 h-12 rounded-lg overflow-hidden border-2 ${
                     essentialsFotoAktif?.id === foto.id
                       ? "border-black"
@@ -560,25 +556,49 @@ Ordinary people. Extraordinary calling.`;
             Size guide
           </button>
 
+          {/* UPDATED SIZE CHART with Lebar, Panjang, Bahu, Lengan */}
           {showSizeChart && (
             <div className="mt-3 p-3 bg-gray-50 rounded-lg border border-gray-200">
-              <div className="text-[9px] font-medium text-center text-black mb-2">
+              <p className="text-[9px] font-medium text-center text-black mb-2">
                 Size chart (cm)
+              </p>
+              <div className="overflow-x-auto">
+                <table className="w-full text-[8px] text-gray-600">
+                  <thead>
+                    <tr className="border-b border-gray-200">
+                      <th className="text-left py-1 font-medium text-black">
+                        Size
+                      </th>
+                      <th className="text-left py-1 font-medium text-black">
+                        Lebar
+                      </th>
+                      <th className="text-left py-1 font-medium text-black">
+                        Panjang
+                      </th>
+                      <th className="text-left py-1 font-medium text-black">
+                        Bahu
+                      </th>
+                      <th className="text-left py-1 font-medium text-black">
+                        Lengan
+                      </th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {Object.entries(sizeChart).map(([size, data]) => (
+                      <tr key={size} className="border-b border-gray-100">
+                        <td className="py-1 font-medium text-black">{size}</td>
+                        <td className="py-1">{data.lebar}</td>
+                        <td className="py-1">{data.panjang}</td>
+                        <td className="py-1">{data.bahu}</td>
+                        <td className="py-1">{data.lengan}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
               </div>
-              <div className="flex justify-center gap-5 text-[8px] text-gray-600">
-                <div>
-                  <span className="block font-medium text-black">S</span>52/70
-                </div>
-                <div>
-                  <span className="block font-medium text-black">M</span>55/73
-                </div>
-                <div>
-                  <span className="block font-medium text-black">L</span>58/76
-                </div>
-                <div>
-                  <span className="block font-medium text-black">XL</span>61/79
-                </div>
-              </div>
+              <p className="text-[6px] text-gray-400 text-center mt-2">
+                *Ukuran dapat berbeda 1-2cm
+              </p>
             </div>
           )}
         </div>
@@ -601,6 +621,47 @@ Ordinary people. Extraordinary calling.`;
           {stokUkuran[ukuranAktif] === 0 ? "SOLD OUT" : "BELI SEKARANG"}
         </button>
 
+        {/* FAQ SECTION */}
+        <div className="mt-16 space-y-4">
+          <div className="text-center text-[10px] font-medium text-gray-400 tracking-[0.2em] mb-6">
+            FAQ
+          </div>
+          <div className="space-y-1">
+            {faqs.map((faq, index) => (
+              <div
+                key={index}
+                className="border-b border-gray-100 last:border-0"
+              >
+                <button
+                  onClick={() => setOpenFaq(openFaq === index ? null : index)}
+                  className="w-full py-4 flex justify-between items-center text-left transition-colors hover:text-gray-600"
+                >
+                  <span className="text-xs font-medium text-black uppercase tracking-wider">
+                    {faq.q}
+                  </span>
+                  <span className="text-gray-400 text-xs ml-4">
+                    {openFaq === index ? "−" : "+"}
+                  </span>
+                </button>
+                <AnimatePresence>
+                  {openFaq === index && (
+                    <motion.div
+                      initial={{ height: 0, opacity: 0 }}
+                      animate={{ height: "auto", opacity: 1 }}
+                      exit={{ height: 0, opacity: 0 }}
+                      className="overflow-hidden"
+                    >
+                      <p className="text-[11px] text-gray-500 pb-4 leading-relaxed">
+                        {faq.a}
+                      </p>
+                    </motion.div>
+                  )}
+                </AnimatePresence>
+              </div>
+            ))}
+          </div>
+        </div>
+
         {/* FOOTER */}
         <div className="text-center mt-7 pt-4 border-t border-gray-100">
           <div className="text-[9px] text-gray-400 tracking-[0.15em]">
@@ -608,6 +669,24 @@ Ordinary people. Extraordinary calling.`;
           </div>
           <div className="text-[8px] text-gray-300 mt-1">
             DROP 01 · THE CALLING
+          </div>
+          <div className="flex justify-center gap-4 mt-4">
+            <a
+              href={`https://wa.me/${WHATSAPP_NUMBER}`}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="text-[9px] text-gray-400 hover:text-black transition-colors"
+            >
+              WhatsApp
+            </a>
+            <a
+              href="https://www.instagram.com/cavoofficial.id"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="text-[9px] text-gray-400 hover:text-black transition-colors"
+            >
+              Instagram
+            </a>
           </div>
         </div>
       </div>
