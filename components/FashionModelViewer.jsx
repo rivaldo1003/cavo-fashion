@@ -28,6 +28,7 @@ export default function Home() {
   const [showSizeChart, setShowSizeChart] = useState(false);
   const [showToast, setShowToast] = useState(false);
   const [toastMessage, setToastMessage] = useState("");
+  const [timeLeft, setTimeLeft] = useState({});
   const [totalPcs, setTotalPcs] = useState(0);
 
   // Fetch products dari backend
@@ -91,6 +92,36 @@ export default function Home() {
         setEssentialImages(fallback);
         setEssentialsFotoAktif(fallback[0]);
       });
+
+    // Countdown logic
+    const releaseDate = new Date("2026-05-19T00:00:00"); // May 19, 2026
+
+    const calculateTimeLeft = () => {
+      const difference = +releaseDate - +new Date();
+      let timeLeft = {};
+
+      if (difference > 0) {
+        timeLeft = {
+          days: Math.floor(difference / (1000 * 60 * 60 * 24)),
+          hours: Math.floor((difference / (1000 * 60 * 60)) % 24),
+          minutes: Math.floor((difference / 1000 / 60) % 60),
+          seconds: Math.floor((difference / 1000) % 60),
+        };
+      }
+      return timeLeft;
+    };
+
+    setTimeLeft(calculateTimeLeft());
+    const timer = setInterval(() => {
+      setTimeLeft(calculateTimeLeft());
+    }, 1000);
+
+    return () => clearInterval(timer);
+  }, []);
+
+  const timerComponents = Object.keys(timeLeft).map((interval) => {
+    if (!timeLeft[interval]) return null;
+    return `${timeLeft[interval]} ${interval} `;
   }, []);
 
   if (error) {
@@ -302,10 +333,17 @@ Ordinary people. Extraordinary calling.`;
           <p className="text-[10px] font-semibold text-gray-500 uppercase tracking-[0.2em]">
             PRE-ORDER
           </p>
-          <p className="text-xs text-gray-700 mt-1">
-            Website resmi diluncurkan hari ini,
-            <span className="font-bold text-black"> 19 Mei 2026</span>
-          </p>
+          {timerComponents.length ? (
+            <p className="text-xs text-gray-700 mt-1">
+              Official release dalam:{" "}
+              <span className="font-bold text-black">{timerComponents}</span>
+            </p>
+          ) : (
+            <p className="text-xs text-gray-700 mt-1">
+              Official release hari ini,{" "}
+              <span className="font-bold text-black">19 Mei 2026</span>
+            </p>
+          )}
           <p className="text-[9px] text-gray-400 mt-1">
             Pesanan akan diproses dan dikirim sesuai tanggal rilis.
           </p>
