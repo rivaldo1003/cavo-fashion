@@ -70,17 +70,23 @@ export default function Home() {
       })
       .then((data) => {
         const imagesArray = Array.isArray(data) ? data : [];
-        setEssentialImages(imagesArray);
-        if (imagesArray.length > 0) {
-          setEssentialsFotoAktif(imagesArray[0]); // 👈 Set default gambar pertama
+        // Filter hanya gambar yang mengandung kata 'essential'
+        const filteredImages = imagesArray.filter(
+          (img) => img.gambar && img.gambar.includes("essential"),
+        );
+
+        // Jika hasil filter dari API ada isinya, baru kita update state
+        if (filteredImages.length > 0) {
+          setEssentialImages(filteredImages);
+          setEssentialsFotoAktif(filteredImages[0]);
         }
       })
       .catch(() => {
         const fallback = [
-          { id: 1, image_url: "/models/essential-1.png" },
-          { id: 2, image_url: "/models/essential-2.png" },
-          { id: 3, image_url: "/models/essential-3.png" },
-          { id: 4, image_url: "/models/essential-4.png" },
+          { id: 1, gambar: "/models/essential-1.png" },
+          { id: 2, gambar: "/models/essential-2.png" },
+          { id: 3, gambar: "/models/essential-3.png" },
+          { id: 4, gambar: "/models/essential-4.png" },
         ];
         setEssentialImages(fallback);
         setEssentialsFotoAktif(fallback[0]);
@@ -115,17 +121,17 @@ export default function Home() {
     essentialImages.length > 0
       ? essentialImages
       : [
-          { id: 1, image_url: "/models/essential-1.png" },
-          { id: 2, image_url: "/models/essential-2.png" },
-          { id: 3, image_url: "/models/essential-3.png" },
-          { id: 4, image_url: "/models/essential-4.png" },
+          { id: 1, gambar: "/models/essential-1.png" },
+          { id: 2, gambar: "/models/essential-2.png" },
+          { id: 3, gambar: "/models/essential-3.png" },
+          { id: 4, gambar: "/models/essential-4.png" },
         ];
 
   // 👈 Gambar utama berdasarkan kategori
   const gambarUtama =
     kategoriKoleksi === "faith"
       ? tokohAktif?.image_url
-      : essentialsFotoAktif?.image_url;
+      : essentialsFotoAktif?.gambar;
 
   const produkTerpilih = kategoriKoleksi === "faith" ? tokohAktif : essentials;
   const stokUkuran = produkTerpilih
@@ -317,7 +323,7 @@ Ordinary people. Extraordinary calling.`;
                   }`}
                 >
                   <Image
-                    src={foto.image_url}
+                    src={foto.gambar}
                     alt="Essential"
                     fill
                     className="object-cover"
