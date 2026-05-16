@@ -311,7 +311,7 @@ Mohon konfirmasi. Terima kasih.`;
             transition={{ delay: 0.6 }}
             className="text-[9px] tracking-[0.2em] text-gray-300 uppercase"
           >
-            minimun form. Maximum presence.
+            Minimum Form. Maximum Presence.
           </motion.p>
 
           {/* Loading dots */}

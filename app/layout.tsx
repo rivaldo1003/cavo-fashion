@@ -13,7 +13,7 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "CAVO | Ordinary People. Extraordinary Calling.",
+  title: "CAVO | Minimum Form. Maximum Presence.",
   description:
     "Premium faith streetwear brand. Faith Archives graphic tee & Essentials basic tee. Cotton Australia 250 Coolbreeze. Limited to 21 pieces. DROP 01 — THE CALLING.",
   keywords:
@@ -22,7 +22,7 @@ export const metadata: Metadata = {
   creator: "CAVO",
   publisher: "CAVO",
   openGraph: {
-    title: "CAVO — Ordinary People. Extraordinary Calling.",
+    title: "CAVO — Minimum Form. Maximum Presence.",
     description:
       "DROP 01: THE CALLING. Faith Archives + Essentials. Limited to 21 pieces.",
     url: "https://cavoofficial.id", // ← UPDATED
@@ -40,7 +40,7 @@ export const metadata: Metadata = {
   },
   twitter: {
     card: "summary_large_image",
-    title: "CAVO | Ordinary People. Extraordinary Calling.",
+    title: "CAVO | Minimum Form. Maximum Presence.",
     description: "DROP 01 — THE CALLING. Limited to 21 pieces.",
     images: ["/models/logo.png"],
   },

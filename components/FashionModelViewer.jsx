@@ -189,7 +189,7 @@ export default function Home() {
             transition={{ delay: 0.6 }}
             className="text-[9px] tracking-[0.2em] text-gray-300 uppercase"
           >
-            minimum form. Maximum presence.
+            Minimum Form. Maximum Presence.
           </motion.p>
 
           <motion.div
@@ -314,7 +314,7 @@ Ordinary people. Extraordinary calling.`;
             DROP 01 — THE CALLING
           </div>
           <div className="text-[10px] text-gray-400 italic">
-            Minimal Form. Maximum Presence.
+            Minimum Form. Maximum Presence.
           </div>
           <div className="w-12 h-px bg-gray-300 mx-auto mt-4" />
         </div>
@@ -665,7 +665,7 @@ Ordinary people. Extraordinary calling.`;
         {/* FOOTER */}
         <div className="text-center mt-7 pt-4 border-t border-gray-100">
           <div className="text-[9px] text-gray-400 tracking-[0.15em]">
-            CAVO — FAITH ARCHIVES
+            CAVO — Minimum Form. Maximum Presence.
           </div>
           <div className="text-[8px] text-gray-300 mt-1">
             DROP 01 · THE CALLING
