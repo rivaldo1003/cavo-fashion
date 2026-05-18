@@ -89,7 +89,15 @@ export function useAdmin() {
     setIsAuthenticated(false);
   };
 
-  const updateStock = async (id: number, stocks: any) => {
+  const updateStock = async (
+    id: number,
+    stocks: {
+      stock_s: number;
+      stock_m: number;
+      stock_l: number;
+      stock_xl: number;
+    },
+  ) => {
     try {
       const res = await fetch(`${API_URL}/products/${id}/stock`, {
         method: "PUT",
@@ -97,11 +105,18 @@ export function useAdmin() {
         body: JSON.stringify(stocks),
       });
       if (res.ok) {
-        showMessage("Stok diperbarui");
-        fetchProducts();
+        showMessage("Stok berhasil diperbarui ✅");
+        await fetchProducts(); // Refresh data
+        return true;
+      } else {
+        const error = await res.json();
+        showMessage(`Gagal: ${error.message || "Server error"}`);
+        return false;
       }
     } catch (err) {
-      showMessage("Gagal update stok");
+      console.error("Error update stock:", err);
+      showMessage("Gagal update stok ❌");
+      return false;
     }
   };
 

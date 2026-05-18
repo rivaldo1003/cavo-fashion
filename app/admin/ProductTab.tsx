@@ -7,11 +7,13 @@ interface ProductTabProps {
   products: any[];
   updateStock: (
     id: number,
-    s: number,
-    m: number,
-    l: number,
-    xl: number,
-  ) => Promise<void>;
+    stocks: {
+      stock_s: number;
+      stock_m: number;
+      stock_l: number;
+      stock_xl: number;
+    },
+  ) => Promise<boolean>; // ← Ubah dari Promise<void> ke Promise<boolean>
   updateProductDetails: (id: number, form: any) => Promise<void>;
   uploadImage: (id: number, file: File) => Promise<void>;
 }
@@ -24,6 +26,7 @@ export default function ProductTab({
 }: ProductTabProps) {
   const [editingProduct, setEditingProduct] = useState<any>(null);
   const [uploadingImage, setUploadingImage] = useState<any>(null);
+  const [savingStockId, setSavingStockId] = useState<number | null>(null);
   const [editForm, setEditForm] = useState({
     name: "",
     gelar: "",
@@ -31,8 +34,63 @@ export default function ProductTab({
     price: 0,
   });
 
+  // State untuk menyimpan nilai stok sementara per produk
+  const [stockValues, setStockValues] = useState<{
+    [key: number]: {
+      stock_s: number;
+      stock_m: number;
+      stock_l: number;
+      stock_xl: number;
+    };
+  }>({});
+
   const faithArchives = products.filter((p) => p.category === "FAITH ARCHIVES");
   const essentials = products.find((p) => p.category === "ESSENTIALS");
+
+  // Inisialisasi atau update stock values
+  const getStockValues = (product: any) => {
+    if (!stockValues[product.id]) {
+      return {
+        stock_s: product.stock_s || 0,
+        stock_m: product.stock_m || 0,
+        stock_l: product.stock_l || 0,
+        stock_xl: product.stock_xl || 0,
+      };
+    }
+    return stockValues[product.id];
+  };
+
+  const handleStockChange = (
+    productId: number,
+    size: string,
+    value: string,
+  ) => {
+    const numValue = parseInt(value) || 0;
+    const sizeKey = `stock_${size.toLowerCase()}`;
+
+    setStockValues((prev) => ({
+      ...prev,
+      [productId]: {
+        ...prev[productId],
+        [sizeKey]: numValue,
+      },
+    }));
+  };
+
+  const handleSaveStock = async (productId: number) => {
+    const stocks = stockValues[productId];
+    if (!stocks) return;
+
+    setSavingStockId(productId);
+    try {
+      await updateStock(productId, stocks);
+      // Berhasil, bisa kasih notifikasi atau biarkan state tetap
+    } catch (error) {
+      console.error("Error saving stock:", error);
+    } finally {
+      setSavingStockId(null);
+    }
+  };
 
   return (
     <>
@@ -136,6 +194,12 @@ export default function ProductTab({
             <ProductCard
               key={product.id}
               product={product}
+              stockValues={getStockValues(product)}
+              savingStock={savingStockId === product.id}
+              onStockChange={(size: string, value: string) =>
+                handleStockChange(product.id, size, value)
+              }
+              onSaveStock={() => handleSaveStock(product.id)}
               onEdit={() => {
                 setEditingProduct(product);
                 setEditForm({
@@ -146,7 +210,6 @@ export default function ProductTab({
                 });
               }}
               onUpload={() => setUploadingImage(product)}
-              updateStock={updateStock}
             />
           ))}
         </div>
@@ -158,6 +221,12 @@ export default function ProductTab({
           <h2 className="text-base font-bold text-black mb-3">Essentials</h2>
           <ProductCard
             product={essentials}
+            stockValues={getStockValues(essentials)}
+            savingStock={savingStockId === essentials.id}
+            onStockChange={(size: string, value: string) =>
+              handleStockChange(essentials.id, size, value)
+            }
+            onSaveStock={() => handleSaveStock(essentials.id)}
             onEdit={() => {
               setEditingProduct(essentials);
               setEditForm({
@@ -168,7 +237,6 @@ export default function ProductTab({
               });
             }}
             onUpload={() => setUploadingImage(essentials)}
-            updateStock={updateStock}
           />
         </div>
       )}
@@ -176,7 +244,16 @@ export default function ProductTab({
   );
 }
 
-function ProductCard({ product, onEdit, onUpload, updateStock }: any) {
+// ProductCard Component dengan TOMBOL SIMPAN
+function ProductCard({
+  product,
+  stockValues,
+  savingStock,
+  onStockChange,
+  onSaveStock,
+  onEdit,
+  onUpload,
+}: any) {
   return (
     <div className="border border-gray-100 rounded p-4">
       <div className="flex gap-4">
@@ -218,36 +295,36 @@ function ProductCard({ product, onEdit, onUpload, updateStock }: any) {
             </div>
           </div>
 
-          {/* Stock Inputs */}
-          <div className="grid grid-cols-4 gap-3 mt-3 pt-3 border-t border-gray-50">
-            {["S", "M", "L", "XL"].map((size) => {
-              const stockKey = `stock_${size.toLowerCase()}`;
-              return (
-                <div key={size}>
-                  <label className="text-xs text-gray-500 block mb-1">
-                    {size}
-                  </label>
-                  <input
-                    type="number"
-                    defaultValue={product[stockKey] || 0}
-                    onBlur={(e) => {
-                      const newStock = parseInt(e.target.value) || 0;
-                      if (newStock !== product[stockKey]) {
-                        updateStock(
-                          product.id,
-                          size === "S" ? newStock : product.stock_s,
-                          size === "M" ? newStock : product.stock_m,
-                          size === "L" ? newStock : product.stock_l,
-                          size === "XL" ? newStock : product.stock_xl,
-                        );
-                      }
-                    }}
-                    className="w-full px-2 py-1 border border-gray-200 rounded text-sm text-black"
-                    min="0"
-                  />
-                </div>
-              );
-            })}
+          {/* Stock Inputs dengan TOMBOL SIMPAN */}
+          <div className="mt-3 pt-3 border-t border-gray-50">
+            <div className="grid grid-cols-4 gap-3 mb-3">
+              {["S", "M", "L", "XL"].map((size) => {
+                const stockKey = `stock_${size.toLowerCase()}`;
+                return (
+                  <div key={size}>
+                    <label className="text-xs text-gray-500 block mb-1">
+                      {size}
+                    </label>
+                    <input
+                      type="number"
+                      value={stockValues[stockKey] || 0}
+                      onChange={(e) => onStockChange(size, e.target.value)}
+                      className="w-full px-2 py-1 border border-gray-200 rounded text-sm text-black"
+                      min="0"
+                    />
+                  </div>
+                );
+              })}
+            </div>
+
+            {/* TOMBOL SIMPAN */}
+            <button
+              onClick={onSaveStock}
+              disabled={savingStock}
+              className="w-full bg-black text-white py-2 rounded text-sm hover:bg-gray-800 disabled:bg-gray-400 disabled:cursor-not-allowed transition"
+            >
+              {savingStock ? "Menyimpan..." : "💾 Simpan Stok"}
+            </button>
           </div>
         </div>
       </div>
