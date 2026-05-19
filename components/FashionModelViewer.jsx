@@ -22,6 +22,7 @@ export default function Home() {
   const [products, setProducts] = useState([]);
   const [essentialImages, setEssentialImages] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [cart, setCart] = useState([]);
   const [error, setError] = useState(null);
   const [kategoriKoleksi, setKategoriKoleksi] = useState("faith");
   const [tokohAktif, setTokohAktif] = useState(null);
@@ -118,6 +119,11 @@ export default function Home() {
     }, 1000);
 
     return () => clearInterval(timer);
+  }, []);
+
+  useEffect(() => {
+    const savedCart = localStorage.getItem("cavo_cart");
+    if (savedCart) setCart(JSON.parse(savedCart));
   }, []);
 
   const faqs = [
@@ -247,6 +253,35 @@ export default function Home() {
       }
     : { S: 0, M: 0, L: 0, XL: 0, XXL: 0 };
   const ukuranTersedia = ["S", "M", "L", "XL", "XXL"];
+
+  const addToCart = (product, size, silent = false) => {
+    const existingCart = JSON.parse(localStorage.getItem("cavo_cart") || "[]");
+    const existingIndex = existingCart.findIndex(
+      (item) => item.id === product.id && item.size === size,
+    );
+
+    if (existingIndex > -1) {
+      existingCart[existingIndex].quantity += 1;
+    } else {
+      existingCart.push({
+        id: product.id,
+        name: product.name,
+        size: size,
+        price: product.price,
+        image: product.image_url || product.gambar,
+        gelar: product.gelar || "Black Edition",
+        quantity: 1,
+      });
+    }
+
+    localStorage.setItem("cavo_cart", JSON.stringify(existingCart));
+    setCart(existingCart);
+    if (!silent) {
+      setToastMessage("Berhasil ditambah ke keranjang");
+      setShowToast(true);
+      setTimeout(() => setShowToast(false), 3000);
+    }
+  };
 
   const handleShopNow = () => {
     if (stokUkuran[ukuranAktif] === 0) {
@@ -603,23 +638,68 @@ Ordinary people. Extraordinary calling.`;
           )}
         </div>
 
-        <button
-          onClick={() => {
-            if (stokUkuran[ukuranAktif] > 0) {
-              router.push(
-                `/checkout?product=${encodeURIComponent(produkTerpilih.name)}&size=${ukuranAktif}&price=${produkTerpilih.price}&image=${produkTerpilih.image_url}&gelar=${encodeURIComponent(produkTerpilih.gelar || "")}`,
-              );
-            }
-          }}
-          disabled={stokUkuran[ukuranAktif] === 0}
-          className={`w-full mt-7 py-3 text-sm font-medium tracking-[0.2em] rounded-full transition ${
-            stokUkuran[ukuranAktif] > 0
-              ? "bg-black text-white hover:bg-gray-800"
-              : "bg-gray-100 text-gray-400 cursor-not-allowed"
-          }`}
-        >
-          {stokUkuran[ukuranAktif] === 0 ? "SOLD OUT" : "BELI SEKARANG"}
-        </button>
+        <div className="flex gap-2 mt-7">
+          <button
+            onClick={() => {
+              if (stokUkuran[ukuranAktif] > 0) {
+                addToCart(produkTerpilih, ukuranAktif);
+              }
+            }}
+            disabled={stokUkuran[ukuranAktif] === 0}
+            className={`flex-1 py-3 text-[10px] font-bold tracking-[0.1em] rounded-full border transition ${
+              stokUkuran[ukuranAktif] > 0
+                ? "border-black text-black hover:bg-gray-50"
+                : "border-gray-100 text-gray-300 cursor-not-allowed"
+            }`}
+          >
+            + KERANJANG
+          </button>
+          <button
+            onClick={() => {
+              if (stokUkuran[ukuranAktif] > 0) {
+                addToCart(produkTerpilih, ukuranAktif, true);
+                router.push("/checkout");
+              }
+            }}
+            disabled={stokUkuran[ukuranAktif] === 0}
+            className={`flex-[2] py-3 text-[10px] font-bold tracking-[0.1em] rounded-full transition ${
+              stokUkuran[ukuranAktif] > 0
+                ? "bg-black text-white hover:bg-gray-800"
+                : "bg-gray-100 text-gray-400 cursor-not-allowed"
+            }`}
+          >
+            {stokUkuran[ukuranAktif] === 0 ? "SOLD OUT" : "BELI SEKARANG"}
+          </button>
+        </div>
+
+        {/* Floating Cart Badge */}
+        {cart.length > 0 && (
+          <motion.button
+            initial={{ scale: 0 }}
+            animate={{ scale: 1 }}
+            onClick={() => router.push("/checkout")}
+            className="fixed bottom-6 right-6 w-14 h-14 bg-black text-white rounded-full shadow-2xl flex items-center justify-center z-40"
+          >
+            <span className="absolute -top-1 -right-1 bg-red-500 text-white text-[10px] font-bold w-5 h-5 rounded-full flex items-center justify-center border-2 border-white">
+              {cart.reduce((sum, item) => sum + item.quantity, 0)}
+            </span>
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              width="20"
+              height="20"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="2"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+            >
+              <circle cx="9" cy="21" r="1" />
+              <circle cx="20" cy="21" r="1" />
+              <path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6" />
+            </svg>
+          </motion.button>
+        )}
 
         {/* FAQ SECTION */}
         <div className="mt-16 space-y-4">

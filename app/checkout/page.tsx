@@ -14,17 +14,8 @@ function CheckoutContent() {
   const [loading, setLoading] = useState(false);
   const [success, setSuccess] = useState(false);
   const [errors, setErrors] = useState<{ [key: string]: string }>({});
+  const [cartItems, setCartItems] = useState<any[]>([]);
   const [copiedBank, setCopiedBank] = useState<string | null>(null);
-  const [productData, setProductData] = useState<{
-    name: string | null;
-    size: string | null;
-    price: string | null;
-    image: string | null;
-    gelar: string | null;
-  } | null>(null);
-  const [quantity, setQuantity] = useState(1);
-  const [maxStock, setMaxStock] = useState(0);
-  const [availableSizes, setAvailableSizes] = useState<any>({});
   const [products, setProducts] = useState<any[]>([]);
   const [showSizeSelector, setShowSizeSelector] = useState(false);
 
@@ -43,38 +34,33 @@ function CheckoutContent() {
       .then((data) => {
         setProducts(data);
 
-        const product = searchParams.get("product");
-        const size = searchParams.get("size");
-        const price = searchParams.get("price");
-        const image = searchParams.get("image");
-        const gelar = searchParams.get("gelar");
+        // Load items from localStorage
+        const savedCart = localStorage.getItem("cavo_cart");
+        if (savedCart) {
+          const items = JSON.parse(savedCart);
+          // Add current product from URL if it's not in cart yet (legacy support)
+          const urlProduct = searchParams.get("product");
+          const urlSize = searchParams.get("size");
 
-        setProductData({
-          name: product,
-          size: size,
-          price: price,
-          image: image,
-          gelar: gelar,
-        });
-
-        // Cek stok
-        const productItem = data.find((p: any) => p.name === product);
-        if (productItem && size) {
-          const stockKey = `stock_${size.toLowerCase()}`;
-          const availableStock = productItem[stockKey] || 0;
-          setMaxStock(availableStock);
-
-          // Simpan semua stok per size
-          setAvailableSizes({
-            S: productItem.stock_s || 0,
-            M: productItem.stock_m || 0,
-            L: productItem.stock_l || 0,
-            XL: productItem.stock_xl || 0,
-          });
-
-          if (quantity > availableStock && availableStock > 0) {
-            setQuantity(availableStock);
+          if (
+            urlProduct &&
+            urlSize &&
+            !items.find((i: any) => i.name === urlProduct && i.size === urlSize)
+          ) {
+            const productItem = data.find((p: any) => p.name === urlProduct);
+            if (productItem) {
+              items.push({
+                id: productItem.id,
+                name: productItem.name,
+                size: urlSize,
+                price: productItem.price,
+                image: productItem.image_url,
+                gelar: productItem.gelar || "Black Edition",
+                quantity: 1,
+              });
+            }
           }
+          setCartItems(items);
         }
       });
   }, [searchParams]);
@@ -85,36 +71,27 @@ function CheckoutContent() {
     setTimeout(() => setCopiedBank(null), 2000);
   };
 
-  const increaseQuantity = () => {
-    if (quantity < maxStock) {
-      setQuantity(quantity + 1);
+  const updateQuantity = (index: number, delta: number) => {
+    const newCart = [...cartItems];
+    const item = newCart[index];
+    const product = products.find((p) => p.id === item.id);
+    const stockLimit = product
+      ? product[`stock_${item.size.toLowerCase()}`]
+      : 99;
+
+    const newQty = item.quantity + delta;
+    if (newQty >= 1 && newQty <= stockLimit) {
+      item.quantity = newQty;
+      setCartItems(newCart);
+      localStorage.setItem("cavo_cart", JSON.stringify(newCart));
     }
   };
 
-  const decreaseQuantity = () => {
-    if (quantity > 1) {
-      setQuantity(quantity - 1);
-    }
-  };
-
-  const changeSize = (newSize: string) => {
-    const productItem = products.find((p: any) => p.name === productData?.name);
-    if (productItem) {
-      const stockKey = `stock_${newSize.toLowerCase()}`;
-      const newStock = productItem[stockKey] || 0;
-
-      if (newStock > 0) {
-        setProductData({
-          ...productData!,
-          size: newSize,
-          price: productItem.price.toString(),
-          image: productItem.image_url,
-        });
-        setMaxStock(newStock);
-        setQuantity(1);
-        setShowSizeSelector(false);
-      }
-    }
+  const removeItem = (index: number) => {
+    const newCart = cartItems.filter((_, i) => i !== index);
+    setCartItems(newCart);
+    localStorage.setItem("cavo_cart", JSON.stringify(newCart));
+    if (newCart.length === 0) router.push("/");
   };
 
   const validateForm = () => {
@@ -151,12 +128,6 @@ function CheckoutContent() {
       newErrors.customerAddress = "Alamat minimal 10 karakter";
     }
 
-    if (quantity === 0) {
-      newErrors.quantity = "Stok habis, pilih ukuran lain";
-    } else if (quantity > maxStock) {
-      newErrors.quantity = `Stok tersisa ${maxStock} pcs`;
-    }
-
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
   };
@@ -164,46 +135,69 @@ function CheckoutContent() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
-    if (!productData) return;
+    if (cartItems.length === 0) return;
     if (!validateForm()) return;
 
     setLoading(true);
 
     try {
       const paymentMethodText = "Transfer Bank (BCA/Mandiri)";
-      const totalPrice = parseInt(productData.price || "0") * quantity;
+      const totalOverall = cartItems.reduce(
+        (sum, item) => sum + parseInt(item.price) * item.quantity,
+        0,
+      );
 
-      const res = await fetch(`${API_URL}/orders`, {
+      // ✅ KIRIM 1 REQUEST DENGAN ARRAY ITEMS (BUKAN LOOP)
+      const itemsPayload = cartItems.map((item) => ({
+        product_name: item.name,
+        product_gelar: item.gelar,
+        size: item.size,
+        quantity: item.quantity,
+        price: parseInt(item.price),
+      }));
+
+      const response = await fetch(`${API_URL}/orders`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           customer_name: formData.customerName.trim(),
           customer_phone: formData.customerPhone.replace(/\s/g, ""),
           customer_address: formData.customerAddress.trim(),
-          product_name: productData.name,
-          product_gelar: productData.gelar,
-          size: productData.size,
-          quantity: quantity,
-          total_price: totalPrice,
+          items: itemsPayload,
+          total_price: totalOverall,
           payment_method: paymentMethodText,
           notes: formData.notes.trim(),
         }),
       });
 
-      if (res.ok) {
-        setSuccess(true);
-      } else {
-        const error = await res.json();
-        alert(error.error || "Gagal memproses order");
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.error || "Gagal memproses order");
       }
-    } catch (err) {
-      alert("Gagal memproses order");
+
+      // Simpan data untuk WA konfirmasi
+      const orderSummary = {
+        customer_name: formData.customerName.trim(),
+        items: cartItems,
+        total: totalOverall,
+      };
+      localStorage.setItem("last_order", JSON.stringify(orderSummary));
+      localStorage.removeItem("cavo_cart");
+      setSuccess(true);
+    } catch (err: any) {
+      alert(err.message || "Gagal memproses order");
     }
 
     setLoading(false);
   };
 
   if (success) {
+    const lastOrder = JSON.parse(localStorage.getItem("last_order") || "{}");
+    const itemsList =
+      lastOrder.items
+        ?.map((i: any) => `- ${i.name} (${i.size}) x${i.quantity}`)
+        .join("\n") || "";
+
     return (
       <div className="min-h-screen flex items-center justify-center bg-white p-5">
         <div className="text-center">
@@ -224,10 +218,8 @@ Nama: ${formData.customerName}
 No WA: ${formData.customerPhone}
 
 Pesanan:
-Produk: ${productData?.name} ${productData?.gelar ? `- ${productData.gelar}` : ""}
-Ukuran: ${productData?.size}
-Jumlah: ${quantity} pcs
-Total: Rp ${(parseInt(productData?.price || "0") * quantity).toLocaleString("id-ID")}
+${itemsList}
+Total: Rp ${lastOrder.total?.toLocaleString("id-ID")}
 
 Bukti transfer terlampir.
 Mohon konfirmasi. Terima kasih.`;
@@ -257,7 +249,7 @@ Mohon konfirmasi. Terima kasih.`;
     );
   }
 
-  if (!productData) {
+  if (cartItems.length === 0 && !loading) {
     return (
       <div className="min-h-screen flex flex-col items-center justify-center bg-white">
         <motion.div
@@ -342,7 +334,10 @@ Mohon konfirmasi. Terima kasih.`;
     );
   }
 
-  const totalPrice = parseInt(productData.price || "0") * quantity;
+  const totalPrice = cartItems.reduce(
+    (sum, item) => sum + parseInt(item.price) * item.quantity,
+    0,
+  );
 
   return (
     <div className="min-h-screen bg-gray-50 py-8">
@@ -362,115 +357,73 @@ Mohon konfirmasi. Terima kasih.`;
 
         <div className="w-full h-px bg-gray-200 mb-6" />
 
-        {/* Ringkasan Pesanan - Bisa diedit */}
-        <div className="bg-white rounded-lg p-4 mb-4 shadow-sm">
-          <div className="flex gap-3">
-            <div className="relative w-16 h-16 bg-gray-100 rounded overflow-hidden">
-              <Image
-                src={productData.image || "/models/logo.png"}
-                alt={productData.name || "Product Image"}
-                fill
-                className="object-cover"
-              />
-            </div>
-            <div className="flex-1">
-              <div className="flex justify-between items-start mb-1">
-                <h3 className="font-bold text-black">{productData.name}</h3>
-                <button
-                  onClick={() => router.push("/")} // Mengarahkan ke halaman utama untuk memilih produk lain
-                  className="text-[10px] text-gray-400 underline hover:text-black"
-                >
-                  Ubah
-                </button>
-              </div>
-              {productData.gelar && (
-                <p className="text-xs text-gray-500">{productData.gelar}</p>
-              )}
-              <div className="mt-2 flex flex-col gap-0.5">
-                <p className="text-xs text-gray-600">
-                  Ukuran: <span className="font-bold">{productData.size}</span>
-                  <button
-                    type="button"
-                    onClick={() => setShowSizeSelector(!showSizeSelector)}
-                    className="text-xs text-blue-600 hover:text-blue-800 ml-2"
-                  >
-                    {showSizeSelector ? "Tutup" : "Ganti"}
-                  </button>
-                </p>
-                <p className="text-[10px] text-gray-400">
-                  Tersedia: {maxStock} pcs
-                </p>
-              </div>
-              <p className="text-sm font-bold text-black mt-2">
-                {/* Harga per pcs */}
-                {/* Memastikan harga ditampilkan dengan benar */}
-                Rp {parseInt(productData.price || "0").toLocaleString("id-ID")}
-              </p>
-            </div>
-          </div>
+        {/* Daftar Keranjang */}
+        <div className="space-y-4 mb-6">
+          {cartItems.map((item, index) => (
+            <div
+              key={`${item.id}-${item.size}`}
+              className="bg-white rounded-lg p-4 shadow-sm relative"
+            >
+              <button
+                onClick={() => removeItem(index)}
+                className="absolute top-2 right-2 text-gray-300 hover:text-red-500 text-xs"
+              >
+                ✕
+              </button>
+              <div className="flex gap-3">
+                <div className="relative w-16 h-20 bg-gray-100 rounded overflow-hidden">
+                  <Image
+                    src={item.image || "/models/logo.png"}
+                    alt={item.name}
+                    fill
+                    className="object-cover"
+                  />
+                </div>
+                <div className="flex-1">
+                  <h3 className="font-bold text-black text-sm">{item.name}</h3>
+                  <p className="text-[10px] text-gray-500">{item.gelar}</p>
+                  <p className="text-xs text-black mt-1">
+                    Size: <span className="font-bold">{item.size}</span>
+                  </p>
 
-          {/* Size Selector Dropdown */}
-          {showSizeSelector && (
-            <div className="mt-3 pt-3 border-t border-gray-100">
-              <p className="text-xs text-gray-500 mb-2">Pilih Ukuran Lain:</p>
-              <div className="flex gap-2">
-                {["S", "M", "L", "XL"].map((size) => {
-                  const stock =
-                    availableSizes[size as keyof typeof availableSizes];
-                  const isAvailable = stock > 0;
-                  const isActive = productData.size === size;
-                  return (
-                    <button
-                      key={size}
-                      type="button"
-                      onClick={() => isAvailable && changeSize(size)}
-                      disabled={!isAvailable}
-                      className={`w-12 py-2 text-sm rounded-md border transition ${
-                        isActive
-                          ? "border-black bg-black text-white"
-                          : isAvailable
-                            ? "border-gray-300 text-black hover:border-black"
-                            : "border-gray-100 text-gray-300 cursor-not-allowed"
-                      }`}
-                    >
-                      {size}
-                    </button>
-                  );
-                })}
+                  <div className="flex justify-between items-end mt-2">
+                    <div className="flex items-center gap-3 border border-gray-200 rounded-full px-2 py-1">
+                      <button
+                        type="button"
+                        onClick={() => updateQuantity(index, -1)}
+                        className="text-gray-500 w-4"
+                      >
+                        -
+                      </button>
+                      <span className="text-xs font-bold text-black w-4 text-center">
+                        {item.quantity}
+                      </span>
+                      <button
+                        type="button"
+                        onClick={() => updateQuantity(index, 1)}
+                        className="text-gray-500 w-4"
+                      >
+                        +
+                      </button>
+                    </div>
+                    <p className="text-sm font-bold text-black">
+                      Rp{" "}
+                      {(parseInt(item.price) * item.quantity).toLocaleString(
+                        "id-ID",
+                      )}
+                    </p>
+                  </div>
+                </div>
               </div>
             </div>
-          )}
+          ))}
 
-          {/* Quantity Selector */}
-          <div className="mt-3 pt-3 border-t border-gray-100">
-            <div className="flex justify-between items-center">
-              <p className="text-sm text-black">Jumlah</p>
-              <div className="flex items-center gap-3">
-                <button
-                  type="button"
-                  onClick={decreaseQuantity}
-                  disabled={quantity <= 1 || maxStock === 0}
-                  className="w-7 h-7 rounded-full border border-gray-300 text-black disabled:opacity-50 hover:bg-gray-100"
-                >
-                  -
-                </button>
-                <span className="text-base font-bold text-black w-6 text-center">
-                  {quantity}
-                </span>
-                <button
-                  type="button"
-                  onClick={increaseQuantity}
-                  disabled={quantity >= maxStock || maxStock === 0}
-                  className="w-7 h-7 rounded-full border border-gray-300 text-black disabled:opacity-50 hover:bg-gray-100"
-                >
-                  +
-                </button>
-              </div>
-            </div>
-            {errors.quantity && (
-              <p className="text-red-500 text-xs mt-1">{errors.quantity}</p>
-            )}
-          </div>
+          <button
+            onClick={() => router.push("/")}
+            className="w-full py-2 border-2 border-dashed border-gray-200 rounded-lg text-gray-400 text-xs hover:border-black hover:text-black transition"
+          >
+            + Tambah Produk Lain
+          </button>
         </div>
 
         <form onSubmit={handleSubmit} className="space-y-3">
@@ -657,14 +610,10 @@ Mohon konfirmasi. Terima kasih.`;
 
           <button
             type="submit"
-            disabled={loading || maxStock === 0}
+            disabled={loading || cartItems.length === 0}
             className="w-full mt-4 py-3 bg-black text-white text-sm font-medium rounded-full hover:bg-gray-800 transition disabled:bg-gray-400"
           >
-            {loading
-              ? "Memproses..."
-              : maxStock === 0
-                ? "Stok Habis"
-                : "Buat Pesanan"}
+            {loading ? "Memproses..." : "Buat Pesanan"}
           </button>
         </form>
 

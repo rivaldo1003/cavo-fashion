@@ -37,7 +37,48 @@ export default function OrderTab({
     return texts[status] || status;
   };
 
+  // Ambil items dari order (support multi items)
+  const getOrderItems = (order: any) => {
+    if (order.items && Array.isArray(order.items)) {
+      return order.items;
+    }
+    // Fallback untuk order lama (single item)
+    if (order.product_name) {
+      return [
+        {
+          product_name: order.product_name,
+          product_gelar: order.product_gelar,
+          size: order.size,
+          quantity: order.quantity,
+          price: order.total_price / order.quantity,
+        },
+      ];
+    }
+    return [];
+  };
+
+  // Hitung total items
+  const getTotalItems = (order: any) => {
+    const items = getOrderItems(order);
+    return items.reduce((sum: number, item: any) => sum + item.quantity, 0);
+  };
+
   const generateInvoice = (order: any) => {
+    const items = getOrderItems(order);
+    const itemsTableRows = items
+      .map(
+        (item: any) => `
+      <tr>
+        <td>${item.product_name} ${item.product_gelar ? `- ${item.product_gelar}` : ""}</td>
+        <td>${item.size}</td>
+        <td>${item.quantity}</td>
+        <td>Rp ${(item.price || item.total_price / item.quantity).toLocaleString("id-ID")}</td>
+        <td>Rp ${((item.price || item.total_price / item.quantity) * item.quantity).toLocaleString("id-ID")}</td>
+      </tr>
+    `,
+      )
+      .join("");
+
     const invoiceHtml = `
     <!DOCTYPE html>
     <html>
@@ -207,13 +248,7 @@ export default function OrderTab({
               </tr>
             </thead>
             <tbody>
-              <tr>
-                <td>${order.product_name} ${order.product_gelar ? `- ${order.product_gelar}` : ""}</td>
-                <td>${order.size}</td>
-                <td>${order.quantity}</td>
-                <td>Rp ${(order.total_price / order.quantity).toLocaleString("id-ID")}</td>
-                <td>Rp ${order.total_price.toLocaleString("id-ID")}</td>
-              </tr>
+              ${itemsTableRows}
             </tbody>
           </table>
 
@@ -223,7 +258,7 @@ export default function OrderTab({
         </div>
         <div class="footer">
           <div class="footer-tagline">Minimum Form. Maximum Presence.</div>
-          <p>Terima kasih telah berbelanja di CAVO</p>
+          <p>Terima kasih sudah berbelanja di CAVO</p>
           <p style="margin-top: 4px; font-size: 8px;">Ordinary people. Extraordinary calling.</p>
         </div>
       </div>
@@ -252,128 +287,170 @@ export default function OrderTab({
 
   return (
     <div className="space-y-3">
-      {orders.map((order) => (
-        <div
-          key={order.id}
-          className="border border-gray-100 rounded-lg overflow-hidden"
-        >
-          {/* Header */}
+      {orders.map((order) => {
+        const items = getOrderItems(order);
+        const isMultiItem = items.length > 1;
+        const totalItems = getTotalItems(order);
+
+        return (
           <div
-            className="p-4 bg-gray-50 cursor-pointer hover:bg-gray-100 transition"
-            onClick={() =>
-              setExpandedOrder(expandedOrder === order.id ? null : order.id)
-            }
+            key={order.id}
+            className="border border-gray-100 rounded-lg overflow-hidden"
           >
-            <div className="flex justify-between items-center">
-              <div>
-                <div className="flex items-center gap-3">
-                  <span className="font-mono text-xs text-black">
-                    {order.order_number}
-                  </span>
-                  <span
-                    className={`text-xs px-2 py-0.5 rounded-full ${getStatusBadge(order.status)}`}
-                  >
-                    {getStatusText(order.status)}
-                  </span>
-                </div>
-                <div className="text-sm text-black mt-1">
-                  {order.customer_name}
-                </div>
-              </div>
-              <div className="text-right">
-                <div className="text-sm font-bold text-black">
-                  Rp {order.total_price.toLocaleString("id-ID")}
-                </div>
-                <div className="text-xs text-gray-400">
-                  {order.product_name} - {order.size}
-                </div>
-              </div>
-            </div>
-          </div>
-
-          {/* Expanded Detail */}
-          {expandedOrder === order.id && (
-            <div className="p-4 border-t border-gray-100 space-y-3">
-              <div className="grid grid-cols-2 gap-3 text-sm">
+            {/* Header */}
+            <div
+              className="p-4 bg-gray-50 cursor-pointer hover:bg-gray-100 transition"
+              onClick={() =>
+                setExpandedOrder(expandedOrder === order.id ? null : order.id)
+              }
+            >
+              <div className="flex justify-between items-center">
                 <div>
-                  <p className="text-xs text-gray-400">Customer</p>
-                  <p className="text-black font-medium">
+                  <div className="flex items-center gap-3">
+                    <span className="font-mono text-xs text-black">
+                      {order.order_number}
+                    </span>
+                    <span
+                      className={`text-xs px-2 py-0.5 rounded-full ${getStatusBadge(order.status)}`}
+                    >
+                      {getStatusText(order.status)}
+                    </span>
+                    {isMultiItem && (
+                      <span className="text-[8px] bg-gray-200 text-gray-600 px-1.5 py-0.5 rounded-full">
+                        {items.length} items
+                      </span>
+                    )}
+                  </div>
+                  <div className="text-sm text-black mt-1">
                     {order.customer_name}
-                  </p>
-                  <p className="text-xs text-gray-500">
-                    {order.customer_phone}
-                  </p>
+                  </div>
                 </div>
-                <div>
-                  <p className="text-xs text-gray-400">Alamat</p>
-                  <p className="text-black text-sm">{order.customer_address}</p>
+                <div className="text-right">
+                  <div className="text-sm font-bold text-black">
+                    Rp {order.total_price.toLocaleString("id-ID")}
+                  </div>
+                  <div className="text-xs text-gray-400">
+                    {isMultiItem
+                      ? `${totalItems} produk`
+                      : `${items[0]?.product_name || order.product_name} - ${items[0]?.size || order.size}`}
+                  </div>
                 </div>
-              </div>
-
-              <div>
-                <p className="text-xs text-gray-400">Produk</p>
-                <p className="text-black text-sm">
-                  {order.product_name}{" "}
-                  {order.product_gelar && `- ${order.product_gelar}`}
-                </p>
-                <p className="text-xs text-gray-500">
-                  Ukuran: {order.size} | Qty: {order.quantity}
-                </p>
-              </div>
-
-              {order.notes && (
-                <div>
-                  <p className="text-xs text-gray-400">Catatan</p>
-                  <p className="text-black text-sm">{order.notes}</p>
-                </div>
-              )}
-
-              <div>
-                <p className="text-xs text-gray-400">Metode Bayar</p>
-                <p className="text-black text-sm">{order.payment_method}</p>
-              </div>
-
-              <div className="flex gap-2 pt-2 flex-wrap">
-                <select
-                  value={order.status}
-                  onChange={(e) => updateStatus(order.id, e.target.value)}
-                  className="text-xs px-3 py-1 border border-gray-300 rounded text-black bg-white"
-                >
-                  <option value="pending">Menunggu Pembayaran</option>
-                  <option value="paid">Sudah Dibayar</option>
-                  <option value="shipped">Dikirim</option>
-                  <option value="delivered">Selesai</option>
-                  <option value="cancelled">Dibatalkan</option>
-                </select>
-
-                <button
-                  onClick={() => openWhatsApp(order, getStatusText)}
-                  className="text-xs bg-green-500 text-white px-3 py-1 rounded hover:bg-green-600"
-                >
-                  WhatsApp Customer
-                </button>
-
-                {/* TOMBOL INVOICE */}
-                <button
-                  onClick={() => generateInvoice(order)}
-                  className="text-xs bg-black text-white px-3 py-1 rounded hover:bg-gray-800"
-                >
-                  🧾 Invoice
-                </button>
               </div>
             </div>
-          )}
-        </div>
-      ))}
+
+            {/* Expanded Detail */}
+            {expandedOrder === order.id && (
+              <div className="p-4 border-t border-gray-100 space-y-3">
+                <div className="grid grid-cols-2 gap-3 text-sm">
+                  <div>
+                    <p className="text-xs text-gray-400">Customer</p>
+                    <p className="text-black font-medium">
+                      {order.customer_name}
+                    </p>
+                    <p className="text-xs text-gray-500">
+                      {order.customer_phone}
+                    </p>
+                  </div>
+                  <div>
+                    <p className="text-xs text-gray-400">Alamat</p>
+                    <p className="text-black text-sm">
+                      {order.customer_address}
+                    </p>
+                  </div>
+                </div>
+
+                {/* Multi Item Products */}
+                <div>
+                  <p className="text-xs text-gray-400 mb-2">Produk</p>
+                  <div className="space-y-2">
+                    {items.map((item: any, idx: number) => (
+                      <div
+                        key={idx}
+                        className="border-b border-gray-50 pb-2 last:border-0"
+                      >
+                        <p className="text-black text-sm font-medium">
+                          {item.product_name}{" "}
+                          {item.product_gelar && `- ${item.product_gelar}`}
+                        </p>
+                        <div className="flex gap-3 text-xs text-gray-500 mt-0.5">
+                          <span>Size: {item.size}</span>
+                          <span>Qty: {item.quantity}</span>
+                          <span>
+                            Price: Rp{" "}
+                            {(
+                              item.price ||
+                              (item.total_price || order.total_price) /
+                                (item.quantity || 1)
+                            ).toLocaleString("id-ID")}
+                          </span>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+
+                {order.notes && (
+                  <div>
+                    <p className="text-xs text-gray-400">Catatan</p>
+                    <p className="text-black text-sm">{order.notes}</p>
+                  </div>
+                )}
+
+                <div>
+                  <p className="text-xs text-gray-400">Metode Bayar</p>
+                  <p className="text-black text-sm">{order.payment_method}</p>
+                </div>
+
+                <div className="flex gap-2 pt-2 flex-wrap">
+                  <select
+                    value={order.status}
+                    onChange={(e) => updateStatus(order.id, e.target.value)}
+                    className="text-xs px-3 py-1 border border-gray-300 rounded text-black bg-white"
+                  >
+                    <option value="pending">Menunggu Pembayaran</option>
+                    <option value="paid">Sudah Dibayar</option>
+                    <option value="shipped">Dikirim</option>
+                    <option value="delivered">Selesai</option>
+                    <option value="cancelled">Dibatalkan</option>
+                  </select>
+
+                  <button
+                    onClick={() => openWhatsApp(order, getStatusText, items)}
+                    className="text-xs bg-green-500 text-white px-3 py-1 rounded hover:bg-green-600"
+                  >
+                    WhatsApp Customer
+                  </button>
+
+                  <button
+                    onClick={() => generateInvoice(order)}
+                    className="text-xs bg-black text-white px-3 py-1 rounded hover:bg-gray-800"
+                  >
+                    🧾 Invoice
+                  </button>
+                </div>
+              </div>
+            )}
+          </div>
+        );
+      })}
     </div>
   );
 }
 
-function openWhatsApp(order: any, getStatusText: Function) {
+function openWhatsApp(order: any, getStatusText: Function, items: any[]) {
   let phoneNumber = order.customer_phone.replace(/\s/g, "").replace(/-/g, "");
   if (phoneNumber.startsWith("0"))
     phoneNumber = "62" + phoneNumber.substring(1);
   if (phoneNumber.startsWith("+")) phoneNumber = phoneNumber.substring(1);
+
+  const itemsList =
+    items
+      ?.map(
+        (item) =>
+          `- ${item.product_name} ${item.product_gelar ? `- ${item.product_gelar}` : ""} (${item.size}) x${item.quantity}`,
+      )
+      .join("\n") ||
+    `- ${order.product_name} (${order.size}) x${order.quantity}`;
 
   const waMessage = `*CAVO - Detail Pesanan*
 
@@ -388,17 +465,16 @@ WhatsApp: ${order.customer_phone}
 Alamat: ${order.customer_address}
 
 *Detail Produk*
-Produk: ${order.product_name}${order.product_gelar ? ` - ${order.product_gelar}` : ""}
-Ukuran: ${order.size}
-Jumlah: ${order.quantity} pcs
-Harga: Rp ${order.total_price.toLocaleString("id-ID")}
+${itemsList}
+
+Total: Rp ${order.total_price.toLocaleString("id-ID")}
 Metode Bayar: ${order.payment_method}
 
 ${order.notes ? `*Catatan:* ${order.notes}` : ""}
 
 ================================
 Terima kasih sudah berbelanja di CAVO.
-Minimal Form. Maximum Presence.
+Minimum Form. Maximum Presence.
 ================================`;
 
   window.open(
