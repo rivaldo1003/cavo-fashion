@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
 import Image from "next/image";
 
-const WHATSAPP_NUMBER = "6282197629818";
+const WHATSAPP_NUMBER = "6285190859818";
 const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000/api";
 
 // Updated size chart with S, M, L, XL, XXL
